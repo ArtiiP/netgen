@@ -12,3 +12,7 @@ netgen
 *.lai
 *.la
 *.a
+
+# eclipse ignore
+.project
+.cproject
