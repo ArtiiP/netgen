@@ -2,6 +2,7 @@
 *.slo
 *.lo
 *.o
+netgen
 
 # Compiled Dynamic libraries
 *.so
