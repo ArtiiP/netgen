@@ -47,8 +47,12 @@ class PFMStreamReader : public TextStreamReader {
 		int endLevel;
 		std::string label;
 //		std::string city;
-//		std::string miasto;
+		std::string miasto;
 //		std::string plik;
+		std::string roadsignType;
+		std::string roadsignPos;
+		std::string roadsignAngle;
+
 		std::string restrParam;
 		std::list<Points> datalist; // lista elementów Data[0-9]
 		

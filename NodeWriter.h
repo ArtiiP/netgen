@@ -26,7 +26,11 @@
 #include "datatypes.h"
 #include "netgen.h"
 #include <list>
+#include <set>
 #include <vector>
+
+#define  HASHSQSIZE   1073741824  //2^30
+#define  HASHGRIDSIZE  2
 
 class NodeWriter {
 	private:
@@ -34,7 +38,8 @@ class NodeWriter {
 		Pointmap&   points; // id węzła i lista dróg dla punktu 
 		Nodemap&    nodes;  // współrzedne dla node_id
 		MapData&    mapData;
-
+                std::set<long long>    rSignHashes;
+                double rSignHashLatitudeBase;
 		std::string sectionBuf;
 		std::ostream& os;
 		std::string processRestriction (Polyline& pl, bool isRoadSign);
@@ -58,6 +63,9 @@ class NodeWriter {
 		void copyRouteToTmpRoute ();
 		short setHighestRouteForNode (const NodemapIter& ni);
 		bool  setAverageRouteForNode (const NodemapIter& ni);
+                long long rSignHash(const Point& p);
+                bool rSignPlaceOccupied(const Point& p);
+                void addRSignHash(const Point& p);
 	public:
 		NodeWriter (std::ostream& ostr, 
 			    MapData& md,

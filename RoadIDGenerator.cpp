@@ -61,6 +61,9 @@ void RoadIDGenerator::startRoad (){
       pl->unknown = sectionBuf;
       pl->routeParam = routeParam;
       pl->restrParam = restrParam;
+      pl->roadsignType = roadsignType;
+      pl->roadsignPos = roadsignPos;
+      pl->roadsignAngle = roadsignAngle;
       if (config.isRestrictionOrRoadSign(objectType)){
 	 pl->roadID = restrictionID;
       } else {

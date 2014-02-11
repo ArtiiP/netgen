@@ -20,6 +20,11 @@
 #define ConfigReaderH
 
 #include "PFMStreamReader.h"
+#include <vector>
+#include <string>
+#include <map>
+
+typedef std::vector<std::string> vecString ;
 
 class ConfigReader : public PFMStreamReader {
 	private:
@@ -29,6 +34,13 @@ class ConfigReader : public PFMStreamReader {
 		static const int MAXTYPE = 0x20;
 		bool token (const std::string& tok, const std::string& val);
 	public:
+                static const int Z_BLAD         = -1;
+                static const int Z_BRAK         = 0;
+                static const int Z_RESTRYKCJA   = 1;
+                static const int Z_PROSTO       = 2;
+                static const int Z_LEWO         = 3;
+                static const int Z_PRAWO        = 4;
+                static const int Z_ZAWRACANIA   = 5;
 		RouteParameters typeParameters [MAXTYPE];
 		bool connectorType [MAXTYPE];
 		int overrideNullSpeed;
@@ -45,6 +57,7 @@ class ConfigReader : public PFMStreamReader {
 		bool adjustConnectorClass;
 		bool adjustClassesInNode;
 		bool createNodeForRestriction;
+		bool printRoadSigns;
 		int numbersType;
 		int restrictionType;
 		int roadSignType;
@@ -55,13 +68,18 @@ class ConfigReader : public PFMStreamReader {
 		int noCrossingType;   
 		int precision; 		
                 bool isCheckOnly;
+                std::map<int,vecString> rSigns ;     // znaki drogowe dla restrykcji
 		void process ();
 		ConfigReader (std::istream& istr);
+//		ConfigReader (const ConfigReader& cf);
+//		ConfigReader (ConfigReader& cf);
 		bool isRoadEnd (int type);
 		bool isRemoved (int type);
 		bool isConnector (int type);
 		bool isRestrictionOrRoadSign (int type);
 		bool isRoadSign (int type);
+                int findRoadSign (const std::string& st);
+                std::string stRoadSign (int type);
 		void dumpParameters ();
    
 };

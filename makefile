@@ -1,9 +1,11 @@
-VERSION = 1.22bugfix
+VERSION = 1.24zakazy
 CXX = g++ 
 CXXWIN = i586-mingw32msvc-g++
 # EXEEXT=.exe
 CXXLINK = $(CXX)
-CXXFLAGS = -g -O2 -Wall --pedantic
+# CXXFLAGS = -g -O2 -Wall --pedantic
+CXXFLAGS = -g -O2 -Wall 
+# CXXFLAGS = -ggdb -Wall --pedantic
 netgen_LDFLAGS = -static
 netgen_EXTRA_SRC =makefile netgen.po
 netgen_EXTRA_DIST = Changes Authors Copying netgen.cfg README

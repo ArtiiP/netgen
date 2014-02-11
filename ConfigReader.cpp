@@ -88,7 +88,9 @@ ConfigReader::ConfigReader (istream& istr): PFMStreamReader (istr){
    adjustConnectorClass = false;
    adjustClassesInNode = false;
    createNodeForRestriction = false;
+   printRoadSigns = false;
 }
+
 
 bool ConfigReader::token (const string& tok, const string &val){
    istringstream is (val);
@@ -100,6 +102,25 @@ bool ConfigReader::token (const string& tok, const string &val){
 	 if ((type >= 0) && (type < MAXTYPE)){
 	    typeParameters[type].parse (val, false);
 	 }
+      }
+   }      
+   if (tok.length () >= 5){
+      if (isEqual (tok.substr (0,5), "RSign")){
+	 int idx = -1;
+         char c = 'E';
+	 is >> idx;
+         vecString vs;
+         rSigns[idx]= vs;
+         is >> c;
+	 if ((idx >= 0) && (idx < MAXTYPE) && c==','){
+              string st;
+              while (is.good()){
+                 getline(is,st,',');
+                 rSigns[idx].push_back(st);
+              }
+	 } else {
+            cerr << "Error parsing parm file: " << tok << "=" << val << "\n";
+         }
       }
    }      
    if (isEqual (tok, "OVERRIDENULLSPEED")){
@@ -125,6 +146,9 @@ bool ConfigReader::token (const string& tok, const string &val){
    }
    if (isEqual (tok, "ROADSIGN")){
       is >> hex >> roadSignType;
+   }
+   if (isEqual (tok, "ROADSIGNHINTS")){
+      is >> printRoadSigns;
    }
    if (isEqual (tok, "RESTRICTION")){
       is >> hex >> restrictionType;
@@ -231,6 +255,25 @@ bool ConfigReader::isConnector (int type){
    return connectorType[type];
 }
 
+int ConfigReader::findRoadSign (const string& st){
+   map<int,vecString>::iterator it;
+   string u = upCase(st);
+
+   for (it=rSigns.begin(); it!=rSigns.end() ; it++)
+     for( unsigned int t2=0 ; t2 < (*it).second.size() ; t2++)
+         if ((*it).second[t2] == st)
+           return (*it).first;
+   return ConfigReader::Z_BLAD;
+
+}
+string ConfigReader::stRoadSign (int type){
+   string blad="BLAD";
+   if( rSigns.find(type) == rSigns.end() )
+      return blad;
+   return rSigns[type][0];
+}
+
+
 void ConfigReader::dumpParameters (){
 
    cerr << "Precision=" << precision << endl;
@@ -295,5 +338,12 @@ void ConfigReader::dumpParameters (){
       }
    }
    cerr << endl;
+   map<int,vecString>::iterator it;
+   for (it=rSigns.begin(); it!=rSigns.end() ; it++){
+     cerr << "RSignidx:" << (*it).first ;
+     for( unsigned int t2=0 ; t2 < (*it).second.size() ; t2++)
+         cerr  << "," << (*it).second[t2];
+     cerr << endl;
+   }
    cerr << endl;
 }

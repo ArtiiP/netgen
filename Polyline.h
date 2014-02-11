@@ -45,6 +45,9 @@ class Polyline {
 		std::string label;
 		std::string unknown;
 		std::string restrParam;
+		std::string roadsignType;
+		std::string roadsignPos;
+		std::string roadsignAngle;
 		
 		std::list<Point> points;
 //		std::vector<Point> points;

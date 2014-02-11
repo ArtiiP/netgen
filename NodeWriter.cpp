@@ -30,6 +30,63 @@
 
 using namespace std;
 
+double vangle( const Point& a1, const Point& a2,const Point& b1,const Point& b2 ){
+
+// oblicza kat miedzy vektorem a1-a2 a b1-b2 w radianach
+// cosinus to poprawka na szerokosc geograficzna
+  double ax = a2.x - a1.x ;
+  double ay = ( a2.y - a1.y ) * cos( deg2rad((a2.x + a1.x)/2 ));
+  double bx = b2.x - b1.x ;
+  double by = ( b2.y - b1.y ) * cos( deg2rad((b2.x + b1.x)/2 ));
+
+// wektory zerowe
+  if ( (ax == 0 && bx == 0 ) ||
+       (ay == 0 && by == 0 ) )
+    return 0;
+//
+// orignalny wzor
+//    math.atan2 (a[1]*b[2]-a[2]*b[1],a[1]*b[1]+a[2]*b[2]) 
+//
+   return  atan2 ( ax*by-ay*bx, ax*bx+ay*by );
+}
+
+double normalize( double deg) { // normalizuje wartosc w stopniach do zakresu 0 -360
+   double norm_angle;
+   norm_angle = std::floor((deg+22.5)/45)*45;
+   double a;
+   a = (floor(norm_angle / 360))*360;
+   return norm_angle-a;
+}
+
+
+long long NodeWriter::rSignHash(const Point& p){
+   double dx=p.x*DEG2M/HASHGRIDSIZE;
+   double dy=p.y*DEG2M/HASHGRIDSIZE*cos(deg2rad(rSignHashLatitudeBase));
+//   cerr << "DX=" <<(long long)round(dx) << " DY= " <<(long long)round(dy)  <<endl;
+   return ((long long)round(dx)+(long long)round(dy)*HASHSQSIZE);
+}
+
+bool NodeWriter::rSignPlaceOccupied(const Point& p){
+   long long h=rSignHash(p);
+   return(  
+           (rSignHashes.find(h-1) != rSignHashes.end() )  ||
+           (rSignHashes.find(h)   != rSignHashes.end() )  ||
+           (rSignHashes.find(h+1) != rSignHashes.end() )  ||
+           (rSignHashes.find(HASHSQSIZE+h-1) != rSignHashes.end() )  ||
+           (rSignHashes.find(HASHSQSIZE+h)   != rSignHashes.end() )  ||
+           (rSignHashes.find(HASHSQSIZE+h+1) != rSignHashes.end() )  ||
+           (rSignHashes.find(-HASHSQSIZE+h-1) != rSignHashes.end() )  ||
+           (rSignHashes.find(-HASHSQSIZE+h)   != rSignHashes.end() )  ||
+           (rSignHashes.find(-HASHSQSIZE+h+1) != rSignHashes.end() )  
+         );
+}
+
+
+void NodeWriter::addRSignHash(const Point& p) {
+               rSignHashes.insert(rSignHash(p));
+}
+   
+
 void NodeWriter::markNodesNearRoad (double radius){
 
    double sradius = radius * radius;
@@ -271,6 +328,31 @@ NodeWriter::NodeWriter (ostream& ostr,
 						 )));
       }
    }
+
+ //
+
+  rSignHashLatitudeBase=nodes.begin()->second.p.x;
+  cerr <<"rSignHashLatitudeBase=" << rSignHashLatitudeBase <<endl;
+   //
+   //proteza dla danych rSigns w cfg
+   // nie chcial mi dzialac constructor kopiujacy
+   // wiec kopiuje tu.
+   //
+
+   map<int,vecString>::iterator it;
+
+   for (it = cfg.rSigns.begin(); it != cfg.rSigns.end() ; it ++){
+        vecString vs(0);
+        
+        for( unsigned int t2=0 ; t2 < (*it).second.size() ; t2++)
+             vs.push_back((*it).second[t2]);
+        
+
+        config.rSigns[(*it).first]=vs;
+   }
+
+  
+
 }
 
 int NodeWriter::getFirstEndNodeID (){
@@ -312,6 +394,7 @@ string NodeWriter::processRestriction (Polyline& pl, bool isRoadSign){
    list<RoadID>         roads;
    list<PointParameters*> nodes_param;
    int point = 0;
+  
    for (PointsIter pn = pl.points.begin ();pn != pl.points.end ();pn++){
       PointmapIter nd = points.find (*pn);
       if (nd != points.end()){
@@ -377,7 +460,7 @@ string NodeWriter::processRestriction (Polyline& pl, bool isRoadSign){
       osr << "NOD=";
       np = nodes_param.begin();
       np++;
-      for (int i=0; i < nodes_param.size() - 2; i++){
+      for (uint i=0; i < nodes_param.size() - 2; i++){
 	 osr << PFMStreamReader::commaIfNotFirst (first) << (*np)->id;
 	 np++;
       }      
@@ -392,6 +475,17 @@ string NodeWriter::processRestriction (Polyline& pl, bool isRoadSign){
    first = true;
    for (np = nodes_param.begin(); np != nodes_param.end(); np++){
       osr << PFMStreamReader::commaIfNotFirst (first) << (*np)->id;
+   }
+//   Point* restrPoints[10]; // 4 wystarcza
+//   int restrPointsNum=0;
+   if (config.printRoadSigns && !isRoadSign) {
+      // i jeszcze raz dla odtworzenia wspolrzednych z Data0= -- zeby sie generowaly znaki drogowe zakazow na WWW
+      osr << "\nData0="; first = true;
+      osr << fixed << setprecision (config.precision);
+      for (np = nodes_param.begin(); np != nodes_param.end(); np++){
+//		  restrPoints[restrPointsNum++]=& nodes[(*np)->id].p;
+         osr << PFMStreamReader::commaIfNotFirst (first) << "(" << nodes[(*np)->id].p.x << "," << nodes[(*np)->id].p.y << ")";
+      }
    }
    if (!isRoadSign){
       osr << "\nTRAFFROADS=";
@@ -417,7 +511,209 @@ string NodeWriter::processRestriction (Polyline& pl, bool isRoadSign){
       } 
       osr << pl.label;
    }
-   osr << "\n[END]\n";
+   if (config.printRoadSigns && !isRoadSign) {
+	   // Tu beda wywolanie funkcji generujacej znaki zakazu, jesli ich jeszcze nie ma
+	   // a jak sa, to je po prostu drukujemy:
+
+
+
+           vector<Road *> restRoads;
+           //  list<PointParameters*>::iterator np ;
+           list<RoadID>::iterator rd;
+
+           first =true;
+	   rd = roads.begin();
+	   np = nodes_param.begin();
+           for ( ; rd != roads.end(); rd++ ){
+		  RoadlistIter it;
+		  for( it = (*np)->roads.begin(); it != (*np)->roads.end() ; it ++) {
+			  if( it->id == *rd ) {
+				  restRoads.push_back( &(*it));
+			  }
+		  }
+		  np++;
+		  for( it = (*np)->roads.begin(); it != (*np)->roads.end() ; it ++) {
+			  if( it->id == *rd ) {
+				  restRoads.push_back(&(* it));
+			  }
+		  }
+	    }
+
+            vector<Point *> restPoints; // punkty na drodze, po 4 na kazdym segmencie restrykcji
+
+            for(unsigned int i=0; i < restRoads.size();i+=2) {
+                  list<Point>::iterator pi;
+                  list<Point> * pll = & mapData.lines[restRoads[i]->id].points;
+                  int pii;
+
+                if ( restRoads[i]->node < restRoads[i+1]->node ){
+                  for( pi=pll->begin(), pii=0; pi != pll->end(); pi++,pii++) {
+                     if( pii == restRoads[i]->node ) {
+                        restPoints.push_back(&(*pi));
+                        pi++;
+                        restPoints.push_back(&(*pi));
+                        break;
+                     }
+                   }
+                  for( pi=pll->begin(), pii=0; pi != pll->end(); pi++,pii++) {
+                     if( pii == restRoads[i+1]->node-1) {
+                        restPoints.push_back(&(*pi));
+                        pi++;
+                        restPoints.push_back(&(*pi));
+                        break;
+                     }
+                   }
+                    
+                     
+		} else {
+                  Point * ptmp;
+                  for( pi=pll->begin(), pii=0; pi != pll->end(); pi++,pii++) {
+                     if( pii+1 == restRoads[i]->node ) {
+                        ptmp = &(*pi); 
+                        pi++;
+                        restPoints.push_back(&(*pi));
+                        restPoints.push_back(ptmp);
+                        break;
+                     }
+                   }
+                  for( pi=pll->begin(), pii=0; pi != pll->end(); pi++,pii++) {
+                     if( pii == restRoads[i+1]->node) {
+                        ptmp = &(*pi); 
+                        pi++;
+                        restPoints.push_back(&(*pi));
+                        restPoints.push_back(ptmp);
+                        break;
+                     }
+                   }
+                }
+            }
+            
+           
+	   double distance=restPoints[0]->metDistance (*restPoints[3]);
+           int rtype = -1;
+	   Point rp ;  //pkt restrykcji
+           double rangle;
+           double ent_angle = restPoints[2]->angle(*restPoints[3]);
+           double sign_angle = normalize(rad2deg(ent_angle));
+
+
+
+
+           rangle = vangle (*restPoints[2],*restPoints[3],*restPoints[4],*restPoints[5]);
+           
+           // Restrykcje 4-elemntowe
+           if ( point == 4 ) {
+	      rp = *restPoints[3] ;  
+              double rangle1 = rangle;
+              double rangle2 = vangle (*restPoints[6],*restPoints[7],*restPoints[8],*restPoints[9]);
+              // dwa razy w lewo to zawracanie
+              if ( rangle1 < 0 && rangle2 < 0 ) { // dwa razy w lewo
+		double signshift = 5;
+                rtype = config.Z_ZAWRACANIA;
+                double  uturn_dist = restPoints[4]->metDistance (*restPoints[7]);
+                if ( uturn_dist/2 < signshift ) // jesli waska zawrotka to znak w polowie zawrotki
+                      signshift = uturn_dist/2 ;
+                rp.shift(signshift,ent_angle-PI/2);
+                rp.shift(10,ent_angle-PI);
+
+              } else { // to bardziej skomplikowane przypadki
+                rtype = config.Z_RESTRYKCJA;
+                rp.shift(5,ent_angle+PI/2);
+                rp.shift(10,ent_angle+PI);
+              }
+             
+           // ....
+           }
+
+           // Restrykcje 3-elemntowe
+           if ( point == 3 ) {
+              if ( *restPoints[0] == *restPoints[7]) { // zawracania na drodze dwukierunkowej
+                rtype = config.Z_ZAWRACANIA ;
+	        rp = *restPoints[3] ;
+                // po lewej 5 m z boku drogi , 10m do tylu
+                rp.shift(5,ent_angle+PI/2);
+                rp.shift(10,ent_angle+PI);
+              } else if ( 20 > rad2deg( rangle )  && rad2deg( rangle ) > -20 ) { //prawie na wprost
+                rtype = config.Z_PROSTO ;
+	        rp = *restPoints[3] ;
+                // po lewej 5 m z boku drogi , 10m do tylu
+                rp.shift(5,ent_angle+PI/2);
+                rp.shift(10,ent_angle+PI);
+              } else if ( rangle < 0 ) {
+                rtype = config.Z_LEWO ;
+	        rp = *restPoints[3] ;
+                // po lewej 5 m z boku drogi , 10m do tylu
+                rp.shift(5,ent_angle+PI/2);
+                rp.shift(10,ent_angle+PI);
+              } else {
+                rtype = config.Z_PRAWO ;
+	        rp = *restPoints[3] ;
+                // po lewej 5 m z boku drogi , 10m do tylu
+                rp.shift(5,ent_angle+PI/2);
+                rp.shift(10,ent_angle+PI);
+              } 
+              if ( ! rSignPlaceOccupied(rp) ){
+		addRSignHash(rp);
+              } else {
+                rp.shift(5,ent_angle+PI);
+		addRSignHash(rp);
+                cerr << "Przesuniety=(" << rp.x << "," << rp.y << ")" <<endl;
+              }
+           }
+           
+
+	   if (pl.roadsignType.length() >0 ) {
+                   istringstream ist (pl.roadsignType);
+                   string st;
+                   getline(ist,st,',');
+                   int rt=config.findRoadSign(st);
+                   if( rt == ConfigReader::Z_BLAD ){
+                       cerr << "Error Sign=" << pl.roadsignType <<endl;
+                       osr << "\nSign=" << config.stRoadSign(rtype);
+                   } else {
+                       osr << "\nSign=" << config.stRoadSign(rt); 
+                   }
+	   } else {
+		   osr << "\nSign=" << config.stRoadSign(rtype);
+           }
+	   if (pl.roadsignPos.length() >0 ) {
+                   char c;
+                   string slat(""),slon("");
+                   Point rpo;
+                   istringstream ist (pl.roadsignPos);
+                   if(ist.good()) ist.get(c);
+                   if(ist.good()) getline(ist,slat,',');
+                   if(ist.good()) getline(ist,slon,')');
+                   if( c=='(' && slat.length()>0 && slon.length()>0 ) {
+                         rpo=Point(atof(slat.c_str()),atof(slon.c_str()));
+                   }
+                   double distance=rpo.metDistance(rp);
+                   osr << fixed << setprecision (config.precision);
+                   if( distance <100 ) { // jesli dalej niz 100m to blad
+		      osr << "\nSignPos" << "=(" << rpo.x << "," << rpo.y << ")";
+                   }else{
+		      osr << "\nSignPos" << "=(" << rp.x << "," << rp.y << ")";
+                      cerr << "Error SignPos=" << pl.roadsignPos <<endl;
+                   }
+	   } else {
+                   osr << fixed << setprecision (config.precision);
+		   osr << "\nSignPos" << "=(" << rp.x << "," << rp.y << ")";
+	   }
+	   if (pl.roadsignAngle.length() >0 ) {
+                   double ang=atof(pl.roadsignAngle.c_str());
+                   if(ang == 0 && pl.roadsignAngle != "0" ) {
+                       cerr << "Error SignAngle=" << pl.roadsignAngle <<endl;
+                       osr << "\nSignAngle=" << (int)sign_angle;
+                   } else {
+		       osr << "\nSignAngle=" << (int)normalize(ang);
+                   }
+	   } else {
+		   osr << "\nSignAngle=" << (int)sign_angle;
+           }
+	   osr << "\n" << pl.unknown << "[END]\n";;
+   } else {
+	   osr << "\n[END]\n";
+   }
 
    restrictionCounter++;
 

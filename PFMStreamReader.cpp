@@ -170,10 +170,14 @@ void PFMStreamReader::section (const string& sec){
       numbersFound = false;
       label.clear ();
 //      city.clear  ();
-//      miasto.clear ();
+      miasto.clear ();
 //      plik.clear ();
       datalist.clear ();
       restrParam.clear();
+      roadsignType.clear ();
+      roadsignPos.clear ();
+      roadsignAngle.clear ();
+
    }
    if (isPolygon){
       insidePolygon = true;
@@ -233,6 +237,19 @@ bool PFMStreamReader::token (const string& token, const string& value){
       routeParam.parse (value, true);
       return true;
    }
+   else if (isEqual (token, "Sign")){
+      roadsignType = value;
+      return true;
+   }
+   else if (isEqual (token, "SignPos")){
+      roadsignPos = value;
+      return true;
+   }
+   else if (isEqual (token, "SignAngle")){
+      roadsignAngle = value;
+      return true;
+   }
+
 /*
    else if (isEqual (token, "Plik")){
       plik = value;

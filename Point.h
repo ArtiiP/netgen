@@ -22,6 +22,18 @@
 #include <iostream>
 #include <list>
 
+#define PI 3.14159265358979323846
+// dlugosc jednego stopnia w metrach
+#define DEG2M ( 40041000 /360 )
+
+inline double deg2rad(double deg) {
+  return (deg * PI / 180);
+}
+
+inline double rad2deg(double rad) {
+  return (rad * 180 / PI);
+}
+
 /* Klasa obiektów przechowujących współrzędne punktu */
 
 class Point {
@@ -39,6 +51,9 @@ class Point {
 		bool lessT (const Point& p, double threshold = 0) const;
 		bool valid ();
 		double sqrDistance (const Point& p) const;
+		double metDistance (const Point& p) const;
+		double angle (const Point& p) const;
+		void shift(double distance, double direction);
 //		void test ();
 };
 
@@ -55,8 +70,8 @@ typedef Points::iterator PointsIter;
 class MaskingPoint : public Point {
 	public:
 		bool used;
-		MaskingPoint () : used (false), Point() {};
-		MaskingPoint (double xp, double yp) : used (false), Point(xp, yp){};
+		MaskingPoint () : Point(), used (false)  {};
+		MaskingPoint (double xp, double yp) : Point(xp, yp),used (false){};
 };
 
 #endif

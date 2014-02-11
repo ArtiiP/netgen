@@ -21,8 +21,19 @@
 
 #include <sstream>
 #include <iomanip>
+#include <cmath>
 
 using namespace std;
+
+
+double Point::angle (const Point& p) const {
+  double dx = p.x - x ;
+  double dy = (p.y - y ) * cos(deg2rad((p.x + x)/2));
+  if ( dx == 0 && dy == 0 )
+    return 0;
+  return atan2 ( dy, dx );
+}
+
 
 
 Point::Point (){
@@ -36,7 +47,7 @@ Point::Point (double xp, double yp){
 bool Point::operator< (const Point& p) const {
    if (x != p.x) return (x < p.x);
    else return (y < p.y);
-};
+}
 
 
 bool Point::lessT (const Point& p, double threshold) const {
@@ -50,6 +61,23 @@ double Point::sqrDistance (const Point& p) const {
    double dx = x - p.x;
    double dy = y - p.y;
    return (dx * dx) + (dy * dy);
+}
+
+double Point::metDistance (const Point& p) const {
+// odleglosc w metrach
+   double dx = (x - p.x) * DEG2M ;
+   double dy = (y - p.y) * DEG2M * cos(deg2rad((x+p.x)/2));
+   return sqrt((dx * dx) + (dy * dy));
+}
+
+
+
+
+void Point::shift(double distance, double direction) {
+// przesuniecie punkt o disance metrow w kierunku direction
+// direction w radianach jak azymut na kompasie E=pi/2 S=pi W=3/2pi
+   x = x + distance/DEG2M * cos ( direction ) ;
+   y = y + distance/DEG2M * sin ( direction ) / cos ( deg2rad( x ));
 }
 
 bool Point::operator== (const Point& p){
@@ -72,12 +100,12 @@ ostream& operator<< (ostream& os, const Point& p){
 
 istream& operator>> (istream& is, Point& p){
    char separator;
-   double x,y;
    is >> separator;
    is >> p.x;
    is >> separator;
    is >> p.y;
    is >> separator;
+   return is;
 }
 
 void Points::addFromString (const string& coords){

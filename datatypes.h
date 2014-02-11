@@ -48,9 +48,9 @@ class Road {
 		bool endpoint; // punkt nalezacy do wezla jest pierwszym
 		               // lub ostatnim w drodze
 		Road (int road_id, int road_node, double len=0, bool endpt = false):
-			length (len),
 			id   (road_id), 
 			node (road_node), 
+			length (len),
 			endpoint (endpt)
    { };
 };
@@ -66,7 +66,7 @@ class PointParameters {
 		Roadlist roads; // lista przechodzących przez punkt dróg
 		unsigned short  flags; // czy punkt jest pierwszym lub ostatnim w drodze
 		                      // czy punkt jest punktem brzegowym mapy
-		PointParameters (): id (0), flags(0), roads () {};
+		PointParameters (): id (0), roads(), flags(0) {};
 };
 
 typedef std::map<Point, PointParameters > Pointmap;
@@ -80,11 +80,11 @@ class RoadParameters {
 		unsigned short flags; // rodzaj punktu
 		double length;
 		RoadParameters (int n, int p, unsigned short fl, double len=0): 
-			length (len),
-			node (n), point (p), flags(fl){};
+			node (n), point (p), flags(fl), 
+			length (len) {};
 		RoadParameters ():
-			length (0),
-			node (0), point (0), flags(0){};
+			node (0), point (0), flags(0),
+			length (0) {};
 };
 
 typedef int NodeID; 
@@ -110,8 +110,8 @@ class NodeParameters {
 		short highestRoute;
 		short averageRoute;
 		unsigned short flags;
-		NodeParameters () : p(0,0), n(0), flags(0), 
-		                     highestRoute(-1), averageRoute(-1){ };
+		NodeParameters () : p(0,0), n(0),
+		           highestRoute(-1), averageRoute(-1),flags(0) {};
 };
 
 typedef int RoadID;
