@@ -27,6 +27,9 @@
 #include <set>
 #include <vector>
 
+// for int64_t
+#include <stdint.h>
+
 #define FORALL(zbior,it) for(typeof(zbior.begin()) it=zbior.begin(); it!=zbior.end(); it++)
 
 
@@ -97,7 +100,7 @@ class Intersection {
         std::vector<LineSegment> segmenty; // wszystkie segmenty
         SweepLineSet sweepLine;       // zbior SW (posortowane po wysokosciach w sweep)
         std::set<EventPoint> eventsQueue;  // kolejka zdarzen
-        std::set<long long> existingInt;   // zbior wykrywania powtorzen przeciec
+        std::set<int64_t> existingInt;   // zbior wykrywania powtorzen przeciec
         std::list<LineSegIter> wertykalne; // zbior poziomych dla aktualnej pozycji
         std::set<LineSegIter> swapowane;   // zbior odcinkow zaburzajacych sortowanie w sweepLine
         int intersectionCounter;

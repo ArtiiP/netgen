@@ -86,6 +86,7 @@ void RouteParameters::parse (const string& buf,
    storeBool (noPedestrian, _noPedestrian);
    storeBool (noBicycle   , _noBicycle   );
    storeBool (noTruck     , _noTruck     );
+   storeBool (isRoutable  , true );
 }
 
 void RouteParameters::clear(){	
@@ -99,4 +100,5 @@ void RouteParameters::clear(){
    noPedestrian= 0;
    noBicycle   = 0;
    noTruck     = 0;
+   isRoutable  = 0;
 }

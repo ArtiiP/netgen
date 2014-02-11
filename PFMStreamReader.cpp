@@ -30,9 +30,11 @@ PFMStreamReader::PFMStreamReader (istream& istr): TextStreamReader (istr){
    insideImgID	  = false;
 }
 
+// TODO: przepisać zeby brać dane z cfg
 bool PFMStreamReader::isRoutable (int type){
+   //return (config.typeParameters[type].isRoutable);
    return ((type > 0) && (type < 0x14)) ||
-   	   (type == 0x16) || (type == 0x1a) || (type == 0x1b);
+   	   (type == 0x16) || (type == 0x1a) || (type == 0x1b) || ((type > 0x100) && (type < 0x120));
 }
 
 string PFMStreamReader::upCase (const string& s){
@@ -94,7 +96,7 @@ void PFMStreamReader::comment (const string& line){
 }
 
 void PFMStreamReader::line (const string& line){
-      int opening, closing, equal;
+      size_t opening, closing, equal;
       equal   = line.find ('=');
       if (equal != string::npos){
 	 string tok, val;

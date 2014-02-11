@@ -208,8 +208,8 @@ bool Intersection::checkSW(bool print){
 
 // generator etykiet unikalnych dla danej pary segmentow
 // ileMaks - ilosc wszystkich segmentow (maxymalny id + 1)
-long long iteratorHasher(const LineSegIter &itA, const LineSegIter &itB, int ileMaks){
-    long long a = itA->id,b = itB->id,c;
+int64_t iteratorHasher(const LineSegIter &itA, const LineSegIter &itB, int ileMaks){
+    int64_t a = itA->id,b = itB->id,c;
     if (a>b) {//swap(a,b)
         c=a;
         a=b;
@@ -283,7 +283,7 @@ void Intersection::findAll (list<Line>& lineList){
             //sprawdz przeciecie/stycznosc z wertykalnymi
             FORALL(wertykalne,wit){
                 if (findImproved( **wit, *e.segIdx, &interPoint)){
-                    long long index = iteratorHasher(*wit, e.segIdx, segmenty.size());
+                    int64_t index = iteratorHasher(*wit, e.segIdx, segmenty.size());
                     existingInt.insert(index); // aby wykrywac powtorki z wertykalnymi
                     intersectionCounter++;
                     intersections.push_back(interPoint);
@@ -300,7 +300,7 @@ void Intersection::findAll (list<Line>& lineList){
             //If (I = Intersect( segE with segA) exists)
             //    Insert I into x;
             if (segA!=sweepLine.end() && findImproved( **segA, **segE, &interPoint) ) {
-                long long index = iteratorHasher(*segE, *segA, segmenty.size());
+                int64_t index = iteratorHasher(*segE, *segA, segmenty.size());
                 existingInt.insert(index);
                 intersectionCounter++;
                 if ( cmpDoubles(interPoint.x,e.p.x) <= 0 ) {
@@ -313,7 +313,7 @@ void Intersection::findAll (list<Line>& lineList){
             //If (I = Intersect( segE with segB) exists)
                 //    Insert I into x;
             if (segE!=sweepLine.begin() && findImproved( **segB, **segE, &interPoint) ) {
-                long long index = iteratorHasher(*segE, *segB, segmenty.size());
+                int64_t index = iteratorHasher(*segE, *segB, segmenty.size());
                 existingInt.insert(index);
                 intersectionCounter++;
                 if ( cmpDoubles(interPoint.x,e.p.x) <= 0 ) {
@@ -349,7 +349,7 @@ void Intersection::findAll (list<Line>& lineList){
             //If (I = Intersect( segA with segB) exists)
             //    If (I is not in x already) Insert I into x;
             if (segA!=sweepLine.end() && segE!=sweepLine.begin() && findImproved( **segA, **segB, &interPoint) ) {
-                long long index = iteratorHasher(*segA, *segB, segmenty.size());
+                int64_t index = iteratorHasher(*segA, *segB, segmenty.size());
                 if (existingInt.insert(index).second) {
                     intersectionCounter++;
                     eventsQueue.insert(EventPoint(interPoint, *segA, *segB ));
@@ -433,7 +433,7 @@ void Intersection::moveSweepLine(double newSL){
         //If (I = Intersect(segE with segA) exists)
         //    If (I is not in x already) Insert I into x;
         if (segA!=sweepLine.end() && findImproved( **segA, **segE, &interPoint) ) {
-            long long index = iteratorHasher(*segA, *segE, segmenty.size());
+            int64_t index = iteratorHasher(*segA, *segE, segmenty.size());
             if (existingInt.insert(index).second) {
                 intersectionCounter++;
                 eventsQueue.insert(EventPoint(interPoint, *segA, *segE ));
@@ -442,7 +442,7 @@ void Intersection::moveSweepLine(double newSL){
         //If (I = Intersect(segE with segB) exists)
         //    If (I is not in x already) Insert I into x;
         if (segE!=sweepLine.begin() && findImproved( **segB, **segE, &interPoint) ) {
-            long long index = iteratorHasher(*segB, *segE, segmenty.size());
+            int64_t index = iteratorHasher(*segB, *segE, segmenty.size());
             if (existingInt.insert(index).second) {
                 intersectionCounter++;
                 eventsQueue.insert(EventPoint(interPoint, *segB, *segE ));
@@ -466,7 +466,7 @@ void Intersection::moveSweepLine(double newSL){
                 bsit--;
                 double hgh = LSIterComparator::heigh(*bsit);
                 if (findImproved(**bsit, **wrIt,&p)){
-                    long long index = iteratorHasher(*bsit, *wrIt, segmenty.size());
+                    int64_t index = iteratorHasher(*bsit, *wrIt, segmenty.size());
                     if (existingInt.insert(index).second){
                         intersectionCounter++;
                         intersections.push_back(p);
@@ -477,7 +477,7 @@ void Intersection::moveSweepLine(double newSL){
             for(bsit=sit;bsit!=sweepLine.end(); bsit++){
                 double hgh = LSIterComparator::heigh(*bsit);
                 if (findImproved(**bsit, **wrIt,&p)){
-                    long long index = iteratorHasher(*bsit, *wrIt, segmenty.size());
+                    int64_t index = iteratorHasher(*bsit, *wrIt, segmenty.size());
                     if (existingInt.insert(index).second){
                         intersectionCounter++;
                         intersections.push_back(p);

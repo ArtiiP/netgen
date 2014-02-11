@@ -59,15 +59,15 @@ double normalize( double deg) { // normalizuje wartosc w stopniach do zakresu 0 
 }
 
 
-long long NodeWriter::rSignHash(const Point& p){
+int64_t NodeWriter::rSignHash(const Point& p){
    double dx=p.x*DEG2M/HASHGRIDSIZE;
    double dy=p.y*DEG2M/HASHGRIDSIZE*cos(deg2rad(rSignHashLatitudeBase));
-//   cerr << "DX=" <<(long long)round(dx) << " DY= " <<(long long)round(dy)  <<endl;
-   return ((long long)round(dx)+(long long)round(dy)*HASHSQSIZE);
+//   cerr << "DX=" <<(int64_t)round(dx) << " DY= " <<(int64_t)round(dy)  <<endl;
+   return ((int64_t)round(dx)+(int64_t)round(dy)*HASHSQSIZE);
 }
 
 bool NodeWriter::rSignPlaceOccupied(const Point& p){
-   long long h=rSignHash(p);
+   int64_t h=rSignHash(p);
    return(  
            (rSignHashes.find(h-1) != rSignHashes.end() )  ||
            (rSignHashes.find(h)   != rSignHashes.end() )  ||
@@ -460,7 +460,7 @@ string NodeWriter::processRestriction (Polyline& pl, bool isRoadSign){
       osr << "NOD=";
       np = nodes_param.begin();
       np++;
-      for (uint i=0; i < nodes_param.size() - 2; i++){
+      for (uint32_t i=0; i < nodes_param.size() - 2; i++){
 	 osr << PFMStreamReader::commaIfNotFirst (first) << (*np)->id;
 	 np++;
       }      
@@ -515,7 +515,17 @@ string NodeWriter::processRestriction (Polyline& pl, bool isRoadSign){
 	   // Tu beda wywolanie funkcji generujacej znaki zakazu, jesli ich jeszcze nie ma
 	   // a jak sa, to je po prostu drukujemy:
 
+           // tu rozpoznajemy czy czasami znak nie jest wylaczony przez Sign=BRAK
+           bool rSignDisabled=false;
 
+	   if (pl.roadsignType.length() >0 ) {
+                   istringstream ist (pl.roadsignType);
+                   string st;
+                   getline(ist,st,',');
+                   int rt=config.findRoadSign(st);
+                   if( rt == ConfigReader::Z_BRAK )
+                      rSignDisabled=true;
+           }
 
            vector<Road *> restRoads;
            //  list<PointParameters*>::iterator np ;
@@ -607,7 +617,7 @@ string NodeWriter::processRestriction (Polyline& pl, bool isRoadSign){
               double rangle1 = rangle;
               double rangle2 = vangle (*restPoints[6],*restPoints[7],*restPoints[8],*restPoints[9]);
               // dwa razy w lewo to zawracanie
-              if ( rangle1 < 0 && rangle2 < 0 ) { // dwa razy w lewo
+              if ( rad2deg(rangle1) < -20 && rad2deg(rangle2) < -20 ) { // dwa razy w lewo
 		double signshift = 5;
                 rtype = config.Z_ZAWRACANIA;
                 double  uturn_dist = restPoints[4]->metDistance (*restPoints[7]);
@@ -622,6 +632,18 @@ string NodeWriter::processRestriction (Polyline& pl, bool isRoadSign){
                 rp.shift(10,ent_angle+PI);
               }
              
+              if ( ! rSignDisabled ) {
+                if ( ! rSignPlaceOccupied(rp) ){
+		  addRSignHash(rp);
+                } else {
+                  rp.shift(5,ent_angle+PI);
+		  addRSignHash(rp);
+                  cerr << "Warning:Sign: Znak przesuniety4=(" << rp.x << "," << rp.y << ")" <<endl;
+                }
+              }else{
+                rp.shift(2,ent_angle+PI/2);
+                rp.shift(2,ent_angle+PI);
+              }
            // ....
            }
 
@@ -639,6 +661,13 @@ string NodeWriter::processRestriction (Polyline& pl, bool isRoadSign){
                 // po lewej 5 m z boku drogi , 10m do tylu
                 rp.shift(5,ent_angle+PI/2);
                 rp.shift(10,ent_angle+PI);
+              } else if ( rad2deg(rangle) < -150 ) { //ostry zakaz w lewo to zakaz zawracanania
+                rtype = config.Z_ZAWRACANIA ;
+	        rp = *restPoints[3] ;
+                // po lewej 5 m z boku drogi , 10m do tylu
+                rp.shift(5,ent_angle+PI/2);
+                rp.shift(10,ent_angle+PI);
+                // cerr << "Zawracanie3=(" << rp.x << "," << rp.y << ")" <<endl;
               } else if ( rangle < 0 ) {
                 rtype = config.Z_LEWO ;
 	        rp = *restPoints[3] ;
@@ -652,12 +681,17 @@ string NodeWriter::processRestriction (Polyline& pl, bool isRoadSign){
                 rp.shift(5,ent_angle+PI/2);
                 rp.shift(10,ent_angle+PI);
               } 
-              if ( ! rSignPlaceOccupied(rp) ){
-		addRSignHash(rp);
-              } else {
-                rp.shift(5,ent_angle+PI);
-		addRSignHash(rp);
-                cerr << "Przesuniety=(" << rp.x << "," << rp.y << ")" <<endl;
+              if ( ! rSignDisabled ) {
+                if ( ! rSignPlaceOccupied(rp) ){
+		  addRSignHash(rp);
+                } else {
+                  rp.shift(5,ent_angle+PI);
+		  addRSignHash(rp);
+                  cerr << "Warning:Sign: Znak przesuniety3=(" << rp.x << "," << rp.y << ")" <<endl;
+                }
+              }else{
+                rp.shift(2,ent_angle+PI/2);
+                rp.shift(2,ent_angle+PI);
               }
            }
            
@@ -668,7 +702,7 @@ string NodeWriter::processRestriction (Polyline& pl, bool isRoadSign){
                    getline(ist,st,',');
                    int rt=config.findRoadSign(st);
                    if( rt == ConfigReader::Z_BLAD ){
-                       cerr << "Error Sign=" << pl.roadsignType <<endl;
+                       cerr << "Error:Sign: Sign=" << pl.roadsignType <<endl;
                        osr << "\nSign=" << config.stRoadSign(rtype);
                    } else {
                        osr << "\nSign=" << config.stRoadSign(rt); 
@@ -693,7 +727,7 @@ string NodeWriter::processRestriction (Polyline& pl, bool isRoadSign){
 		      osr << "\nSignPos" << "=(" << rpo.x << "," << rpo.y << ")";
                    }else{
 		      osr << "\nSignPos" << "=(" << rp.x << "," << rp.y << ")";
-                      cerr << "Error SignPos=" << pl.roadsignPos <<endl;
+                      cerr << "Error:Sign: SignPos=" << pl.roadsignPos <<endl;
                    }
 	   } else {
                    osr << fixed << setprecision (config.precision);
@@ -702,7 +736,7 @@ string NodeWriter::processRestriction (Polyline& pl, bool isRoadSign){
 	   if (pl.roadsignAngle.length() >0 ) {
                    double ang=atof(pl.roadsignAngle.c_str());
                    if(ang == 0 && pl.roadsignAngle != "0" ) {
-                       cerr << "Error SignAngle=" << pl.roadsignAngle <<endl;
+                       cerr << "Error:Sign: SignAngle=" << pl.roadsignAngle <<endl;
                        osr << "\nSignAngle=" << (int)sign_angle;
                    } else {
 		       osr << "\nSignAngle=" << (int)normalize(ang);

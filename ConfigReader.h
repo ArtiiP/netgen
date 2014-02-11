@@ -31,7 +31,7 @@ class ConfigReader : public PFMStreamReader {
 		bool removedFound;
 		int removedTmp, removedLastTmp;
 	protected:
-		static const int MAXTYPE = 0x20;
+		static const int MAXTYPE = 0x120;
 		bool token (const std::string& tok, const std::string& val);
 	public:
                 static const int Z_BLAD         = -1;

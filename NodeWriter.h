@@ -28,6 +28,8 @@
 #include <list>
 #include <set>
 #include <vector>
+// for int64_t
+#include <stdint.h>
 
 #define  HASHSQSIZE   1073741824  //2^30
 #define  HASHGRIDSIZE  2
@@ -38,7 +40,7 @@ class NodeWriter {
 		Pointmap&   points; // id węzła i lista dróg dla punktu 
 		Nodemap&    nodes;  // współrzedne dla node_id
 		MapData&    mapData;
-                std::set<long long>    rSignHashes;
+                std::set<int64_t>    rSignHashes;
                 double rSignHashLatitudeBase;
 		std::string sectionBuf;
 		std::ostream& os;
@@ -63,7 +65,7 @@ class NodeWriter {
 		void copyRouteToTmpRoute ();
 		short setHighestRouteForNode (const NodemapIter& ni);
 		bool  setAverageRouteForNode (const NodemapIter& ni);
-                long long rSignHash(const Point& p);
+                int64_t rSignHash(const Point& p);
                 bool rSignPlaceOccupied(const Point& p);
                 void addRSignHash(const Point& p);
 	public:

@@ -62,7 +62,16 @@ ConfigReader::ConfigReader (istream& istr): PFMStreamReader (istr){
    typeParameters [11].speed = 6;
    typeParameters [11].route = 4;
    typeParameters [12].speed = 3;
-   typeParameters [12].route = 1;   
+   typeParameters [12].route = 1;  
+   
+   for (int t=1; t < MAXTYPE ;t++) {
+		if (!( ((t > 0) && (t < 0x14)) ||
+   	   (t == 0x16) || (t == 0x1a) || (t == 0x1b)) ) {
+			continue;
+	   }
+		typeParameters [t].isRoutable=true;
+   }
+   
    overrideNullSpeed = 0;
    epsilonMax =  0;
    epsilonMin = -1;
@@ -99,6 +108,7 @@ bool ConfigReader::token (const string& tok, const string &val){
 	 istringstream ist (tok.substr(4));
 	 int type = -1;
 	 ist >> hex >> type;
+	 //cerr << "typ " << type << " : " << val << "\n" ;
 	 if ((type >= 0) && (type < MAXTYPE)){
 	    typeParameters[type].parse (val, false);
 	 }
@@ -309,7 +319,14 @@ void ConfigReader::dumpParameters (){
 	   << numbersType << noshowbase << dec << endl;
 
    for (int t=0; t<MAXTYPE; t++){
-//      if (typeParameters [t].speed !=0){
+      if ( ! (typeParameters [t].speed == 0 && 
+			typeParameters[t].route == 0  && 
+			typeParameters[t].noCar == 0  &&
+			typeParameters[t].noPedestrian == 0 &&
+			typeParameters[t].noBicycle ==0 &&
+			typeParameters[t].noBus == 0
+			  
+			)) {
 
 	 cerr << "Routeparam" << hex << t << dec << "=";
    	 cerr << typeParameters [t].speed << "," 
@@ -327,7 +344,7 @@ void ConfigReader::dumpParameters (){
 	 cerr << (typeParameters[t].noBicycle    ? ",1" : ",0");
 	 cerr << (typeParameters[t].noTruck      ? ",1" : ",0");
 	 cerr << "\n";
-//      }
+      }
    }
    cerr << "OverrideNullSpeed=" << overrideNullSpeed << endl;
 

@@ -187,7 +187,7 @@ int main (int argc, char **argv){
 	 exit(1);
       }
       close (0);
-      dup(inf);
+      (void)dup(inf);
    }
 
    // -o, reopen stdout to a filename
@@ -198,7 +198,7 @@ int main (int argc, char **argv){
 		   exit(1);
 	   }
 	   close(1);
-	   dup(of);
+	   (void)dup(of);
    }
 
    ifstream cfg(tablefilename.c_str());

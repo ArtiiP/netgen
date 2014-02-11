@@ -1,3 +1,8 @@
+﻿Wersja 1.25
+	Rozszerzenie typów do 0x120 (w tym rutowalne od 0x100-0x120) (Ar't)
+Wersja 1.24
+	Dodano obsluge znakow zakazow i nakazow na potrzeby www.
+	Z restrykcji -S generuje zakazy.(Michal Gorski)
 Wersja 1.22bugfix
 	Szybka poprawka błędu powodującego naruszenie ochrony pamięci podczas 
 	sprwadzania integralności sieci routingu i napotkania drogi, która nie

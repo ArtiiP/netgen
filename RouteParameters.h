@@ -37,6 +37,7 @@ class RouteParameters {
 		bool noPedestrian;
 		bool noBicycle;
 		bool noTruck;
+		bool isRoutable;
 		void outputSpeedClass (std::ostream &os);
 		void outputRouteRestrictions (std::ostream &os, bool withOneWay = false);
 		void storeBool (bool& storage, int value);
