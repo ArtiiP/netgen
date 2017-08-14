@@ -3,6 +3,7 @@
 *.lo
 *.o
 netgen
+netgen.exe
 
 # Compiled Dynamic libraries
 *.so
