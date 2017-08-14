@@ -1111,7 +1111,7 @@ void NodeWriter::generateIncidenceMap (){
 				ri != ni->second.roads.end(); ri ++){
 
 			// mamy numer punktu drogi, trzeba stwierdzić który to jej nod
-			// oraz jakie id mają poprzedni i nastepny. Taka informacja jest tylko
+			// oraz jakie id mają poprzedni i następny. Taka informacja jest tylko
 			// w liście polylinii, a dokładniej w jej atrybucie nodes
 
 			PolylineMapIter pi = mapData.lines.find(ri->id);
@@ -1168,7 +1168,7 @@ void NodeWriter::generateIncidenceMap (){
 void NodeWriter::process (){
 
 	list<Polyline*> connectors;
-
+	list<Polyline*> roundabouts;
 	for (MapSectionListIter mi = mapData.sections.begin(); mi != mapData.sections.end();mi++){
 		if (mi->objectId){
 			if (!config.isRestrictionOrRoadSign(mapData.lines[mi->objectId].type)){
@@ -1182,8 +1182,15 @@ void NodeWriter::process (){
 						}
 					}
 				}
-				if (config.isConnector(mapData.lines[mi->objectId].type)){
-					connectors.push_back(&mapData.lines[mi->objectId]);
+				// feed conectors but ignore road with class 
+				// TODO dodanie force do RouteParameters i wyfiltrowanie po tym 
+				if (config.isConnector(mapData.lines[mi->objectId].type) && mapData.lines[mi->objectId].routeParam.route == 0) {
+					// TODO make this configurable
+					if (mapData.lines[mi->objectId].type == 0xc) {
+						roundabouts.push_back(&mapData.lines[mi->objectId]);
+					} else {
+						connectors.push_back(&mapData.lines[mi->objectId]);
+					}
 				}
 				if (mapData.lines[mi->objectId].roadID != -1)
 					processRoad (mapData.lines[mi->objectId]);
@@ -1277,7 +1284,7 @@ void NodeWriter::process (){
 		 */
 
 		//////////////
-
+		cerr << "Adjusting classes of " << roundabouts.size() << " roundabouts" << endl;
 		bool somethingToDo = true;
 
 		int iterationCounter = 0;
@@ -1289,15 +1296,15 @@ void NodeWriter::process (){
 		while (somethingToDo){
 			iterationCounter++;
 			somethingToDo = false;
-			cerr << "Iteration: " << iterationCounter << endl;
-			for (list<Polyline*>::iterator connIter = connectors.begin();connIter != connectors.end(); connIter++){
-				//	    cerr << "Processing road: " << (*connIter)->roadID << endl;
+			cerr << endl << "Iteration: " << iterationCounter << endl;
+			for (list<Polyline*>::iterator connIter = roundabouts.begin(); connIter != roundabouts.end(); connIter++) {
+				//	    cerr << "Processing road[0x"<< hex << (*connIter)->type << "]: " << dec << (*connIter)->roadID <<" class:"<< (*connIter)->routeParam.route << endl;
 				// Na podstawie roadID znaeźć nody, a dla nodów inne drogi
 				// wybrać najwyższą klasę spośród znalezionych dróg i ustawić
 				// ją dla connectora, jeśli jest inna niż była ustawić somethingToDo
 				int highestRoute = -1;
-				int secondRoute  = -1;
-				int highestRouteNodeId = -1;
+				//int secondRoute  = -1;
+				//int highestRouteNodeId = -1;
 
 				Roadmap::iterator pb = roads.lower_bound ((*connIter)->roadID);
 				Roadmap::iterator pe = roads.upper_bound ((*connIter)->roadID);
@@ -1316,40 +1323,106 @@ void NodeWriter::process (){
 					}
 					pb++;
 				}
-				if (config.connectorClassesAdjustmentVariant == 2){
-					pb = roads.lower_bound ((*connIter)->roadID);
-					while (pb != pe){
-						if (pb->second.node != highestRouteNodeId){
-							NodemapIter ni = nodes.find(pb->second.node);
-							if (ni != nodes.end()){
-								int hr = setHighestRouteForNode (ni);
-								if (hr > secondRoute){
-									secondRoute = hr;
-								}
-							} else {
-								cerr << "Node not found\n";
-							}
-						}
-						pb++;
-					}
-					/*
-	       cerr << "roadId: " << (*connIter)->roadID << " hr: " << highestRoute
-		       << " sr: " << secondRoute << endl;
-					 */
-					if (secondRoute >= 0){
-						highestRoute = secondRoute;
-					}
-				}
-				if (highestRoute > (*connIter)->routeParam.route){
+
+				if (highestRoute > (*connIter)->routeParam.route) {
 					(*connIter)->routeParam.route = highestRoute;
 					(*connIter)->tmpRoute = highestRoute;
 					somethingToDo = true;
 				}
-			}
-		}
+			} // for ... iterator connIter = connectors
+		} // while(somethingToDo)
+		cerr << endl;
+
+		//////////////
+
+		cerr << "Adjusting classes of " << connectors.size() << " connectors" << endl;
+
+		somethingToDo = true;
+
+		iterationCounter = 0;
+
+		// Zamiast pętlić się bezmyślnie można zastosować algorytm podobny do 
+		// użytego w STAGE_2, ale przy małej liczbie łączników poniższe
+		// rozwiązanie też jest do przyjęcia
+
+		while (somethingToDo) {
+			iterationCounter++;
+			somethingToDo = false;
+			cerr << endl << "Iteration: " << iterationCounter << endl;
+			for (list<Polyline*>::iterator connIter = connectors.begin(); connIter != connectors.end(); connIter++) {
+				cerr << "Processing road[0x" << hex << (*connIter)->type << "]: " << dec << (*connIter)->roadID << " class:" << (*connIter)->routeParam.route << endl;
+				// Na podstawie roadID znaleźć nody, a dla nodów inne drogi 
+				// wybrać najwyższą klasę spośród znalezionych dróg i ustawić
+				// ją dla connectora, jeśli jest inna niż była ustawić somethingToDo
+				int highestRoute = -1;
+				int secondRoute = -1;
+				int highestRouteNodeId = -1;
+
+				Roadmap::iterator pb = roads.lower_bound((*connIter)->roadID);
+				Roadmap::iterator pe = roads.upper_bound((*connIter)->roadID);
+				while (pb != pe) {
+					cerr << "Checking node: " << pb->second.node; //<< endl;
+					NodemapIter ni = nodes.find(pb->second.node);
+					if (ni != nodes.end()) {
+						int hr = setHighestRouteForNode(ni);
+						if (hr > highestRoute) {
+							secondRoute = highestRoute;
+							highestRouteNodeId = pb->second.node;
+							highestRoute = hr;
+						} else if (hr > secondRoute && highestRoute != hr) {
+							secondRoute = hr;
+						}
+						cerr << " hr: " << hr << " " << highestRoute << " " << secondRoute << endl;
+					} else {
+						cerr << "Node not found\n";
+					}
+					pb++;
+				}
+				if (secondRoute == -1) {
+					secondRoute = highestRoute;
+				}
+				if (config.connectorClassesAdjustmentVariant == 1) {
+					// lower end win
+					// nie zawsze się sprawdza kłopotliwe są łączniki równoległe przy drogach 
+
+				   /* pb = roads.lower_bound ((*connIter)->roadID);
+				   while (pb != pe){
+				  if (pb->second.node != highestRouteNodeId){
+					 NodemapIter ni = nodes.find(pb->second.node);
+					 if (ni != nodes.end()){
+					int hr = setHighestRouteForNode (ni);
+					if (hr > secondRoute){
+					   secondRoute = hr;
+					}
+					 } else {
+					cerr << "Node not found\n";
+					 }
+				  }
+				  pb++;
+				   } */
+					cerr << " roadId: " << (*connIter)->roadID << " hr: " << highestRoute
+						<< " sr: " << secondRoute << endl;	       /*
+
+					*/
+					if (secondRoute > 0) { // secondRoute >= 0
+						highestRoute = secondRoute;
+					}
+					if (highestRoute > iterationCounter + 1 && secondRoute == 0) {
+						// próba opóźnienia wielkich class
+						cerr << " delay class " << highestRoute << " i: " << iterationCounter << endl;
+						highestRoute = secondRoute;
+						somethingToDo = true;
+					}
+				} // if (config.connectorClassesAdjustmentVariant == 1)
+				if (highestRoute > (*connIter)->routeParam.route) {
+					(*connIter)->routeParam.route = highestRoute;
+					(*connIter)->tmpRoute = highestRoute;
+					somethingToDo = true;
+				}
+			} // for ... iterator connIter = connectors
+		} // while(somethingToDo)
 		cerr << endl;
 	}
-
 	if (config.adjustClassesInNode){
 
 		cerr << "Reducing number of classes for single node\n";
