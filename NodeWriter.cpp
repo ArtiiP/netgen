@@ -1172,7 +1172,7 @@ void NodeWriter::process (){
 	for (MapSectionListIter mi = mapData.sections.begin(); mi != mapData.sections.end();mi++){
 		if (mi->objectId){
 			if (!config.isRestrictionOrRoadSign(mapData.lines[mi->objectId].type)){
-				if (PFMStreamReader::isRoutable(mapData.lines[mi->objectId].type)){
+				if (config.isRoutable(mapData.lines[mi->objectId].type)){
 					for (PointsIter pn = mapData.lines[mi->objectId].points.begin();
 							pn != mapData.lines[mi->objectId].points.end();
 							pn++){

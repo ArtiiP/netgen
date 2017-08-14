@@ -98,6 +98,9 @@ ConfigReader::ConfigReader (istream& istr): PFMStreamReader (istr){
 	adjustClassesInNode = false;
 	createNodeForRestriction = false;
 	printRoadSigns = false;
+    nonRoutableBike = false;
+    nonRoutablePederestian = false;
+
 }
 
 
@@ -363,4 +366,18 @@ void ConfigReader::dumpParameters (){
 		cerr << endl;
 	}
 	cerr << endl;
+}
+
+// TODO: przepisać zeby brać dane z cfg
+bool ConfigReader::isRoutable (int type){
+   //return (config.typeParameters[type].isRoutable);
+   if (nonRoutableBike && type == 0xd) {
+	   return false;
+   }
+   if (nonRoutablePederestian && type == 0x16){
+	   return false;
+   }
+
+   return ((type > 0) && (type < 0x14)) ||
+   	   (type == 0x16) || (type == 0x1a) || (type == 0x1b) || ((type > 0x100) && (type < 0x120));
 }

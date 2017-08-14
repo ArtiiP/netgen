@@ -1,11 +1,12 @@
 VERSION = 1.26la
 CXX = g++ 
 CXXWIN = i586-mingw32msvc-g++
+CXXWIN = g++
 # EXEEXT=.exe
 CXXLINK = $(CXX)
 # CXXFLAGS = -g -O2 -Wall --pedantic
-CXXFLAGS = -g -O2 -Wall 
-CXXFLAGS = -g -O0 -Wall 
+CXXFLAGS = -g -O2 -Wall -fpermissive
+#CXXFLAGS = -g -O0 -Wall -fpermissive
 netgen_LDFLAGS = -static
 netgen_EXTRA_SRC =makefile netgen.po
 netgen_EXTRA_DIST = Changes Authors Copying netgen.cfg README
@@ -72,7 +73,7 @@ netgen: $(netgen_OBJECTS)
 
 netgen.exe: $(netgen_SOURCES)
 	@rm -f netgen.exe
-	$(CXXWIN) -DVERSION='"$(VERSION)"' $(netgen_LDFLAGS) \
+	$(CXXWIN) $(CXXFLAGS) -DVERSION='"$(VERSION)"' $(netgen_LDFLAGS) \
 	$(netgen_SOURCES) $(netgen_LDADD) $(LIBS) -o netgen.exe
 
 netgen.mo: netgen.po
