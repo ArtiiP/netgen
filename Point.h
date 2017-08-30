@@ -38,7 +38,11 @@ inline double rad2deg(double rad) {
 
 class Point {
 	public:
+#if __cplusplus >= 201402L // C++14
 		static constexpr double INVALID = 400;
+#else
+		static const double INVALID = 400;
+#endif
 
 		double x;
 		double y;

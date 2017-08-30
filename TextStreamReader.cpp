@@ -30,7 +30,11 @@ char bufor[FGETS_BUFFER];
 
 void TextStreamReader::process (){
    while (true){
+#if __cplusplus >= 201103L // C++11
        if (&is != &cin) {
+#else
+       if (is != cin) {
+#endif
           if (!getline (is, linebuf))
               break;
        } else {
